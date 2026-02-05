@@ -30,6 +30,8 @@ export async function generateMetadata(): Promise<Metadata> {
     title: siteName,
     description: '影视聚合',
     manifest: '/manifest.json',
+    // 【关键修改】在这里添加 referrer 设置，这是 Next.js 官方推荐的强制生效方式
+    referrer: 'no-referrer',
   };
 }
 
@@ -91,9 +93,6 @@ export default async function RootLayout({
   return (
     <html lang='zh-CN' suppressHydrationWarning>
       <head>
-        {/* 【核心修复】添加这行代码，解决豆瓣海报无法显示的418错误 */}
-        <meta name="referrer" content="no-referrer" />
-        
         <meta
           name='viewport'
           content='width=device-width, initial-scale=1.0, viewport-fit=cover'
