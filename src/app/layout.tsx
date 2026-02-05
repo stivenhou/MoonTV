@@ -91,6 +91,9 @@ export default async function RootLayout({
   return (
     <html lang='zh-CN' suppressHydrationWarning>
       <head>
+        {/* 【核心修复】添加这行代码，解决豆瓣海报无法显示的418错误 */}
+        <meta name="referrer" content="no-referrer" />
+        
         <meta
           name='viewport'
           content='width=device-width, initial-scale=1.0, viewport-fit=cover'
