@@ -15,7 +15,7 @@ import { ThemeProvider } from '../components/ThemeProvider';
 
 const inter = Inter({ subsets: ['latin'] });
 
-// 动态生成 metadata，支持配置更新后的标题变化
+// 动态生成 metadata
 export async function generateMetadata(): Promise<Metadata> {
   let siteName = process.env.SITE_NAME || 'MoonTV';
   if (
@@ -30,8 +30,7 @@ export async function generateMetadata(): Promise<Metadata> {
     title: siteName,
     description: '影视聚合',
     manifest: '/manifest.json',
-    // 【关键修改】在这里添加 referrer 设置，这是 Next.js 官方推荐的强制生效方式
-    referrer: 'no-referrer',
+    referrer: 'no-referrer', // 再次声明 referrer 策略
   };
 }
 
@@ -50,7 +49,11 @@ export default async function RootLayout({
     process.env.ANNOUNCEMENT ||
     '本网站仅提供影视信息搜索服务，所有内容均来自第三方网站。本站不存储任何视频资源，不对任何内容的准确性、合法性、完整性负责。';
   let enableRegister = process.env.NEXT_PUBLIC_ENABLE_REGISTER === 'true';
-  let imageProxy = process.env.NEXT_PUBLIC_IMAGE_PROXY || '';
+  
+  // 【核心修改】此处强制硬编码使用 weserv 公共图床代理，彻底解决豆瓣 418 问题
+  // 原代码：let imageProxy = process.env.NEXT_PUBLIC_IMAGE_PROXY || '';
+  let imageProxy = 'https://images.weserv.nl/?url=';
+
   let doubanProxy = process.env.NEXT_PUBLIC_DOUBAN_PROXY || '';
   let disableYellowFilter =
     process.env.NEXT_PUBLIC_DISABLE_YELLOW_FILTER === 'true';
@@ -60,6 +63,7 @@ export default async function RootLayout({
       type: category.type,
       query: category.query,
     })) || ([] as Array<{ name: string; type: 'movie' | 'tv'; query: string }>);
+  
   if (
     process.env.NEXT_PUBLIC_STORAGE_TYPE !== 'd1' &&
     process.env.NEXT_PUBLIC_STORAGE_TYPE !== 'upstash'
@@ -68,7 +72,8 @@ export default async function RootLayout({
     siteName = config.SiteConfig.SiteName;
     announcement = config.SiteConfig.Announcement;
     enableRegister = config.UserConfig.AllowRegister;
-    imageProxy = config.SiteConfig.ImageProxy;
+    // 如果配置文件里没填代理，也强制覆盖
+    imageProxy = config.SiteConfig.ImageProxy || 'https://images.weserv.nl/?url=';
     doubanProxy = config.SiteConfig.DoubanProxy;
     disableYellowFilter = config.SiteConfig.DisableYellowFilter;
     customCategories = config.CustomCategories.filter(
@@ -80,11 +85,11 @@ export default async function RootLayout({
     }));
   }
 
-  // 将运行时配置注入到全局 window 对象，供客户端在运行时读取
+  // 将运行时配置注入到全局 window 对象
   const runtimeConfig = {
     STORAGE_TYPE: process.env.NEXT_PUBLIC_STORAGE_TYPE || 'localstorage',
     ENABLE_REGISTER: enableRegister,
-    IMAGE_PROXY: imageProxy,
+    IMAGE_PROXY: imageProxy, // 这里会把修改后的代理地址传给前端
     DOUBAN_PROXY: doubanProxy,
     DISABLE_YELLOW_FILTER: disableYellowFilter,
     CUSTOM_CATEGORIES: customCategories,
@@ -93,12 +98,11 @@ export default async function RootLayout({
   return (
     <html lang='zh-CN' suppressHydrationWarning>
       <head>
+        <meta name="referrer" content="no-referrer" />
         <meta
           name='viewport'
           content='width=device-width, initial-scale=1.0, viewport-fit=cover'
         />
-        {/* 将配置序列化后直接写入脚本，浏览器端可通过 window.RUNTIME_CONFIG 获取 */}
-        {/* eslint-disable-next-line @next/next/no-sync-scripts */}
         <script
           dangerouslySetInnerHTML={{
             __html: `window.RUNTIME_CONFIG = ${JSON.stringify(runtimeConfig)};`,
